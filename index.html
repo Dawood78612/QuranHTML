@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <title>تطبيق القرآن الكريم</title>
+    <!-- Include Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Amiri&display=swap" rel="stylesheet">
+    <style>
+        body {
+            background-color: white;
+            color: black;
+            font-size: 24px;
+            font-family: 'Amiri', serif;
+            direction: rtl;
+            margin: 20px;
+        }
+        #controls {
+            margin-bottom: 20px;
+        }
+        #surah-list {
+            list-style-type: none;
+            padding: 0;
+        }
+        #surah-list li {
+            margin: 5px 0;
+        }
+        #content {
+            margin-top: 20px;
+        }
+        .ayah {
+            margin-bottom: 10px;
+        }
+        .translation {
+            color: gray;
+            font-size: 20px;
+            margin-bottom: 20px;
+            direction: ltr;
+            text-align: left;
+        }
+        .bismillah {
+            font-size: 28px;
+            text-align: center;
+            margin: 20px 0;
+        }
+        .surah-title {
+            text-align: center;
+            margin: 30px 0;
+        }
+    </style>
+</head>
+<body>
+    <div id="controls">
+        <label for="font-type">نوع الخط:</label>
+        <select id="font-type">
+            <option value="'Amiri', serif">Amiri</option>
+            <option value="'Scheherazade New', serif">Scheherazade</option>
+            <option value="Arial">Arial</option>
+            <!-- Add more fonts as needed -->
+        </select>
+
+        <label for="font-size">حجم الخط:</label>
+        <input type="number" id="font-size" value="24" min="10" max="72"> px
+    </div>
+
+    <h1 id="page-title">القرآن الكريم</h1>
+    <ul id="surah-list"></ul>
+    <div id="content"></div>
+
+    <script>
+        // Adjust font type and size
+        document.getElementById('font-type').addEventListener('change', function() {
+            document.body.style.fontFamily = this.value;
+        });
+
+        document.getElementById('font-size').addEventListener('input', function() {
+            document.body.style.fontSize = this.value + 'px';
+        });
+
+        // Function to load XML file
+        function loadXML(url, callback) {
+            var xobj = new XMLHttpRequest();
+            xobj.overrideMimeType("application/xml; charset=UTF-8");
+            xobj.open('GET', url, true);
+            xobj.onreadystatechange = function () {
+                if (xobj.readyState == 4) {
+                    if (xobj.status == 200 || xobj.status == 0) {
+                        console.log(url + ' loaded successfully.');
+                        callback(xobj.responseXML);
+                    } else {
+                        console.error('Error loading ' + url + ': ' + xobj.status + ' ' + xobj.statusText);
+                        callback(null); // Pass null to indicate failure
+                    }
+                }
+            };
+            xobj.send(null);
+        }
+
+        // Load both Quran and Translation XML files
+        let quranData = null, translationData = null;
+
+        loadXML('quran.xml', function(data) {
+            quranData = data;
+            if (translationData !== null) {
+                initializeApp();
+            }
+        });
+
+        loadXML('translation.xml', function(data) {
+            translationData = data;
+            if (quranData !== null) {
+                initializeApp();
+            }
+        });
+
+        function initializeApp() {
+            if (!quranData || !translationData) {
+                console.error('One or both XML files failed to load.');
+                return;
+            }
+            const surahs = quranData.getElementsByTagName('sura');
+            const translationSurahs = translationData.getElementsByTagName('sura');
+            const surahList = document.getElementById('surah-list');
+            const contentDiv = document.getElementById('content');
+            const pageTitle = document.getElementById('page-title');
+
+            // Check if a Surah index is provided in the URL
+            const surahIndexParam = getUrlParameter('surah');
+
+            if (surahIndexParam !== null) {
+                // Display the requested Surah
+                displaySurah(parseInt(surahIndexParam) - 1, surahs, translationSurahs);
+            } else {
+                // Display the list of Surahs
+                pageTitle.textContent = 'القرآن الكريم';
+                for (let i = 0; i < surahs.length; i++) {
+                    const surah = surahs[i];
+                    const surahName = surah.getAttribute('name') || 'سورة ' + surah.getAttribute('index');
+                    const surahNumber = surah.getAttribute('index');
+
+                    const li = document.createElement('li');
+                    const a = document.createElement('a');
+                    a.href = '?surah=' + surahNumber;
+                    a.textContent = `${surahName} (${surahNumber})`;
+                    li.appendChild(a);
+                    surahList.appendChild(li);
+                }
+            }
+
+            // Function to display a Surah
+            function displaySurah(index, surahs, translationSurahs) {
+                contentDiv.innerHTML = '';
+                surahList.style.display = 'none'; // Hide the Surah list
+                const surah = surahs[index];
+                const translationSurah = translationSurahs[index];
+                if (!surah || !translationSurah) {
+                    console.error('Surah not found at index:', index);
+                    return;
+                }
+                const ayahs = surah.getElementsByTagName('aya');
+                const translationAyahs = translationSurah.getElementsByTagName('aya');
+                const surahName = surah.getAttribute('name') || 'سورة ' + surah.getAttribute('index');
+                const surahNumber = parseInt(surah.getAttribute('index'));
+                pageTitle.textContent = surahName;
+
+                // Add a "Back" button
+                const backButton = document.createElement('button');
+                backButton.textContent = 'الرجوع';
+                backButton.onclick = function() {
+                    window.history.back();
+                };
+                contentDiv.appendChild(backButton);
+
+                const surahTitle = document.createElement('h2');
+                surahTitle.className = 'surah-title';
+                surahTitle.textContent = surahName;
+                contentDiv.appendChild(surahTitle);
+
+                // Optionally display Bismillah
+                if (surahNumber !== 1 && surahNumber !== 9) {
+                    const bismillah = document.createElement('p');
+                    bismillah.className = 'bismillah';
+                    bismillah.textContent = 'بِسْمِ اللَّهِ الرَّحْمَـٰنِ الرَّحِيمِ';
+                    contentDiv.appendChild(bismillah);
+                }
+
+                for (let j = 0; j < ayahs.length; j++) {
+                    const ayah = ayahs[j];
+                    const ayahText = ayah.getAttribute('text');
+                    const ayahNumber = ayah.getAttribute('index');
+
+                    // Arabic Ayah
+                    const p = document.createElement('p');
+                    p.className = 'ayah';
+                    p.textContent = `${ayahText} (${ayahNumber})`;
+                    contentDiv.appendChild(p);
+
+                    // Corresponding Translation Ayah
+                    const translationAyah = translationAyahs[j];
+                    const translationText = translationAyah ? translationAyah.getAttribute('text') : '';
+                    const translationP = document.createElement('p');
+                    translationP.className = 'translation';
+                    translationP.textContent = translationText;
+                    contentDiv.appendChild(translationP);
+                }
+            }
+        }
+
+        // Function to get URL parameters
+        function getUrlParameter(name) {
+            name = name.replace(/[\[\]]/g, "\\$&");
+            var regex = new RegExp("[?&]" + name + "(=([^&#]*)|&|#|$)"),
+                results = regex.exec(window.location.href);
+            if (!results) return null;
+            if (!results[2]) return '';
+            return decodeURIComponent(results[2].replace(/\+/g, " "));
+        }
+    </script>
+</body>
+</html>
