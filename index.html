@@ -235,3 +235,170 @@
     </script>
 </body>
 </html>
+
+
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <title>القرآن الكريم</title>
+    <style>
+        body {
+            background-color: #fff;
+            color: #000;
+            font-family: 'Amiri', serif;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+        h1 {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .home-icon {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            width: 40px;
+            height: 40px;
+            cursor: pointer;
+            transition: transform 0.2s ease;
+        }
+        .home-icon:hover {
+            transform: scale(1.1);
+        }
+        .surah-list {
+            list-style: none;
+            padding: 0;
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        .surah-item {
+            padding: 15px;
+            border-bottom: 1px solid #ddd;
+            cursor: pointer;
+            transition: background-color 0.2s ease;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .surah-item:hover {
+            background-color: #f0f0f0;
+        }
+        .surah-name {
+            font-size: 1.2em;
+        }
+        .surah-number {
+            font-size: 1em;
+            color: #555;
+        }
+        /* Responsive Design */
+        @media (max-width: 600px) {
+            .surah-item {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+            .surah-number {
+                margin-top: 5px;
+            }
+            .home-icon {
+                width: 30px;
+                height: 30px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Home Icon -->
+    <a href="homepage.html" aria-label="الصفحة الرئيسية">
+        <svg class="home-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+            <path fill="#007BFF" d="M32 12l22 22h-6v18h-12V38h-8v14H16V34h-6z"/>
+            <path fill="none" stroke="#fff" stroke-width="4" d="M32 12l22 22h-6v18h-12V38h-8v14H16V34h-6z"/>
+        </svg>
+    </a>
+
+    <h1>القرآن الكريم</h1>
+    <ul class="surah-list" id="surahList">
+        <!-- Surahs will be dynamically populated here -->
+    </ul>
+    
+    <!-- Load the Amiri font for Arabic script -->
+    <script src="https://ajax.googleapis.com/ajax/libs/webfont/1/webfont.js"></script>
+    <script>
+        WebFont.load({
+            google: {
+                families: ['Amiri']
+            },
+            active: function() {
+                console.log('Amiri font loaded successfully.');
+            },
+            inactive: function() {
+                alert('فشل تحميل خط Amiri. يرجى التحقق من اتصال الإنترنت.');
+            }
+        });
+    </script>
+    
+    <script>
+        // Function to load XML file
+        function loadXML(url, callback) {
+            var xobj = new XMLHttpRequest();
+            xobj.overrideMimeType("application/xml; charset=UTF-8");
+            xobj.open('GET', url, true);
+            xobj.onreadystatechange = function () {
+                if (xobj.readyState == 4) {
+                    if (xobj.status == 200 || xobj.status == 0) {
+                        callback(xobj.responseXML);
+                    } else {
+                        console.error('Error loading ' + url + ': ' + xobj.status + ' ' + xobj.statusText);
+                        callback(null); // Pass null to indicate failure
+                    }
+                }
+            };
+            xobj.send(null);
+        }
+
+        // Function to populate Surah list
+        function populateSurahs(quranData) {
+            if (!quranData) {
+                alert('فشل في تحميل بيانات القرآن.');
+                return;
+            }
+            const surahs = quranData.getElementsByTagName('sura');
+            const surahList = document.getElementById('surahList');
+            for (let i = 0; i < surahs.length; i++) {
+                const surah = surahs[i];
+                const surahNumber = surah.getAttribute('index');
+                const surahName = surah.getAttribute('name') || 'سورة ' + surahNumber;
+                
+                const listItem = document.createElement('li');
+                listItem.className = 'surah-item';
+                
+                const nameSpan = document.createElement('span');
+                nameSpan.className = 'surah-name';
+                nameSpan.textContent = surahName;
+                
+                const numberSpan = document.createElement('span');
+                numberSpan.className = 'surah-number';
+                numberSpan.textContent = `رقم السورة: ${surahNumber}`;
+                
+                listItem.appendChild(nameSpan);
+                listItem.appendChild(numberSpan);
+                
+                // Optional: Add click event to view Surah details
+                listItem.addEventListener('click', function() {
+                    // Implement Surah detail view or navigation
+                    alert(`تم النقر على سورة ${surahName}`);
+                });
+                
+                surahList.appendChild(listItem);
+            }
+        }
+
+        // Load Quran XML and populate Surahs on page load
+        window.onload = function() {
+            loadXML('quran.xml', function(data) {
+                populateSurahs(data);
+            });
+        };
+    </script>
+</body>
+</html>

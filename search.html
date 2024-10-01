@@ -7,18 +7,36 @@
     <script src="https://ajax.googleapis.com/ajax/libs/webfont/1/webfont.js"></script>
     <style>
         body {
-            background-color: white;
-            color: black;
+            background-color: #fff;
+            color: #000;
             font-size: 24px;
             direction: rtl;
             margin: 20px;
             font-family: 'Amiri', serif; /* Default font */
+        }
+        h1 {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .home-icon {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            width: 40px;
+            height: 40px;
+            cursor: pointer;
+            transition: transform 0.2s ease;
+        }
+        .home-icon:hover {
+            transform: scale(1.1);
         }
         #controls {
             margin-bottom: 20px;
             display: flex;
             flex-direction: column;
             align-items: flex-start;
+            max-width: 500px;
+            margin: 80px auto 20px auto; /* Adjusted margin to accommodate fixed icon */
         }
         #controls label {
             margin: 5px 0;
@@ -27,11 +45,13 @@
             padding: 8px;
             margin-bottom: 10px;
             width: 100%;
-            max-width: 400px;
             box-sizing: border-box;
+            font-size: 1em;
         }
         #results {
             margin-top: 20px;
+            max-width: 800px;
+            margin: 20px auto;
         }
         .result-item {
             border-bottom: 1px solid #ddd;
@@ -47,16 +67,6 @@
             direction: ltr;
             text-align: left;
         }
-        .surah-title {
-            text-align: center;
-            margin: 30px 0;
-            font-size: 28px;
-        }
-        .bismillah {
-            font-size: 28px;
-            text-align: center;
-            margin: 20px 0;
-        }
         .back-link {
             margin-top: 20px;
             display: block;
@@ -66,9 +76,35 @@
         mark {
             background-color: yellow;
         }
+        /* Responsive Design */
+        @media (max-width: 600px) {
+            #controls {
+                width: 90%;
+            }
+            .home-icon {
+                width: 30px;
+                height: 30px;
+            }
+            #controls input, #controls select, #controls button {
+                font-size: 0.9em;
+            }
+            .translation {
+                font-size: 18px;
+            }
+        }
     </style>
 </head>
 <body>
+    <!-- Home Icon -->
+    <a href="homepage.html" aria-label="الصفحة الرئيسية">
+        <svg class="home-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+            <path fill="#007BFF" d="M32 12l22 22h-6v18h-12V38h-8v14H16V34h-6z"/>
+            <path fill="none" stroke="#fff" stroke-width="4" d="M32 12l22 22h-6v18h-12V38h-8v14H16V34h-6z"/>
+        </svg>
+    </a>
+
+    <h1>بحث في القرآن الكريم</h1>
+
     <div id="controls">
         <label for="font-type">نوع الخط:</label>
         <input type="text" id="font-type" placeholder="اكتب اسم الخط" list="font-list">
@@ -103,9 +139,24 @@
         <!-- Search results will appear here -->
     </div>
 
-    <a href="index.html" class="back-link">العودة إلى قائمة السور</a>
+    <!-- Back Link to Homepage (Optional, since Home Icon is present) -->
+    <a href="homepage.html" class="back-link">العودة إلى الصفحة الرئيسية</a>
 
-    <!-- Include your JavaScript code -->
+    <!-- Load the Amiri font for Arabic script -->
+    <script>
+        WebFont.load({
+            google: {
+                families: ['Amiri']
+            },
+            active: function() {
+                console.log('Amiri font loaded successfully.');
+            },
+            inactive: function() {
+                alert('فشل تحميل خط Amiri. يرجى التحقق من اتصال الإنترنت.');
+            }
+        });
+    </script>
+
     <script>
         // Function to escape HTML to prevent XSS
         function escapeHTML(text) {
@@ -327,6 +378,7 @@
                 if (!term) return escapeHTML(text);
                 const regex = buildArabicRegex(term);
                 const escapedText = escapeHTML(text);
+                // Replace matches with <mark> tags, preserving the original text
                 return escapedText.replace(regex, match => `<mark>${match}</mark>`);
             } else {
                 if (!term) return escapeHTML(text);
@@ -335,38 +387,6 @@
                 return escapedText.replace(regex, '<mark>$1</mark>');
             }
         }
-
-        // Optionally, you can handle pressing 'Enter' to trigger search
-        document.getElementById('search-term').addEventListener('keypress', function(e) {
-            if (e.key === 'Enter') {
-                document.getElementById('search-button').click();
-            }
-        });
-
-        // Function to get URL parameters (optional, can be used to pre-fill search)
-        function getUrlParameter(name) {
-            name = name.replace(/[\[\]]/g, "\\$&");
-            var regex = new RegExp("[?&]" + name + "(=([^&#]*)|&|#|$)"),
-                results = regex.exec(window.location.href);
-            if (!results) return null;
-            if (!results[2]) return '';
-            return decodeURIComponent(results[2].replace(/\+/g, " "));
-        }
-
-        // Optional: Handle pre-filling search from URL parameters
-        window.onload = function() {
-            const term = getUrlParameter('term');
-            const language = getUrlParameter('lang');
-            if (term) {
-                document.getElementById('search-term').value = term;
-            }
-            if (language) {
-                document.getElementById('search-language').value = language;
-            }
-            if (term) {
-                document.getElementById('search-button').click();
-            }
-        };
     </script>
 </body>
 </html>
