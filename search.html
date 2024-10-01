@@ -1,0 +1,372 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <title>بحث في القرآن الكريم</title>
+    <!-- Include Web Font Loader -->
+    <script src="https://ajax.googleapis.com/ajax/libs/webfont/1/webfont.js"></script>
+    <style>
+        body {
+            background-color: white;
+            color: black;
+            font-size: 24px;
+            direction: rtl;
+            margin: 20px;
+            font-family: 'Amiri', serif; /* Default font */
+        }
+        #controls {
+            margin-bottom: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
+        }
+        #controls label {
+            margin: 5px 0;
+        }
+        #controls input, #controls select, #controls button {
+            padding: 8px;
+            margin-bottom: 10px;
+            width: 100%;
+            max-width: 400px;
+            box-sizing: border-box;
+        }
+        #results {
+            margin-top: 20px;
+        }
+        .result-item {
+            border-bottom: 1px solid #ddd;
+            padding: 10px 0;
+        }
+        .ayah {
+            font-weight: bold;
+        }
+        .translation {
+            color: gray;
+            font-size: 20px;
+            margin-top: 5px;
+            direction: ltr;
+            text-align: left;
+        }
+        .surah-title {
+            text-align: center;
+            margin: 30px 0;
+            font-size: 28px;
+        }
+        .bismillah {
+            font-size: 28px;
+            text-align: center;
+            margin: 20px 0;
+        }
+        .back-link {
+            margin-top: 20px;
+            display: block;
+            text-decoration: none;
+            color: blue;
+        }
+        mark {
+            background-color: yellow;
+        }
+    </style>
+</head>
+<body>
+    <div id="controls">
+        <label for="font-type">نوع الخط:</label>
+        <input type="text" id="font-type" placeholder="اكتب اسم الخط" list="font-list">
+        <datalist id="font-list">
+            <!-- Commonly used fonts (optional) -->
+            <option value="Amiri">
+            <option value="Scheherazade New">
+            <option value="Lateef">
+            <option value="Noto Naskh Arabic">
+            <option value="Arial">
+            <option value="Cairo">
+            <option value="Lobster">
+            <!-- Add more commonly used fonts here -->
+        </datalist>
+
+        <label for="font-size">حجم الخط:</label>
+        <input type="number" id="font-size" value="24" min="10" max="72"> px
+
+        <label for="search-term">كلمة البحث:</label>
+        <input type="text" id="search-term" placeholder="أدخل الكلمة أو العبارة">
+
+        <label for="search-language">لغة البحث:</label>
+        <select id="search-language">
+            <option value="arabic">العربية</option>
+            <option value="translation">الترجمة</option>
+        </select>
+
+        <button id="search-button">بحث</button>
+    </div>
+
+    <div id="results">
+        <!-- Search results will appear here -->
+    </div>
+
+    <a href="index.html" class="back-link">العودة إلى قائمة السور</a>
+
+    <!-- Include your JavaScript code -->
+    <script>
+        // Function to escape HTML to prevent XSS
+        function escapeHTML(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        // Function to escape regex special characters
+        function escapeRegExp(text) {
+            return text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        }
+
+        // Function to build Arabic regex that ignores diacritics
+        function buildArabicRegex(term) {
+            const diacritics = '[\u064B-\u0652]*';
+            const escapedTerm = escapeRegExp(term);
+            const regexString = escapedTerm.split('').map(char => `${escapeRegExp(char)}${diacritics}`).join('');
+            return new RegExp(regexString, 'g');
+        }
+
+        // Function to normalize Arabic text by removing diacritics and standardizing letters
+        function normalizeArabic(text) {
+            // Remove diacritics
+            let normalized = text.replace(/[\u064B-\u0652]/g, "");
+            // Normalize Alef variants
+            normalized = normalized.replace(/[\u0622\u0623\u0625]/g, "\u0627");
+            // Normalize Ya variants
+            normalized = normalized.replace(/\u0649/g, "\u064A");
+            // Normalize Teh Marbuta to Heh
+            normalized = normalized.replace(/\u0629/g, "\u0647");
+            // Remove Tatweel (kashida)
+            normalized = normalized.replace(/\u0640/g, "");
+            // Normalize Hamza on Alef
+            normalized = normalized.replace(/\u0624/g, "\u0627");
+            // Normalize Waw with Hamza
+            normalized = normalized.replace(/\u0626/g, "\u064A");
+            // Normalize other Hamza variants
+            normalized = normalized.replace(/\u0621/g, ""); // Hamza Alone
+            return normalized;
+        }
+
+        // Adjust font type and size
+        document.getElementById('font-type').addEventListener('change', function() {
+            var fontName = this.value.trim();
+            if (fontName) {
+                // Load the font using Web Font Loader
+                WebFont.load({
+                    google: {
+                        families: [fontName + ':400,700']
+                    },
+                    active: function() {
+                        document.body.style.fontFamily = "'" + fontName + "', serif";
+                    },
+                    inactive: function() {
+                        alert('Font "' + fontName + '" could not be loaded. Please check the font name.');
+                    }
+                });
+            }
+        });
+
+        document.getElementById('font-size').addEventListener('input', function() {
+            document.body.style.fontSize = this.value + 'px';
+        });
+
+        // Function to load XML file
+        function loadXML(url, callback) {
+            var xobj = new XMLHttpRequest();
+            xobj.overrideMimeType("application/xml; charset=UTF-8");
+            xobj.open('GET', url, true);
+            xobj.onreadystatechange = function () {
+                if (xobj.readyState == 4) {
+                    if (xobj.status == 200 || xobj.status == 0) {
+                        console.log(url + ' loaded successfully.');
+                        callback(xobj.responseXML);
+                    } else {
+                        console.error('Error loading ' + url + ': ' + xobj.status + ' ' + xobj.statusText);
+                        callback(null); // Pass null to indicate failure
+                    }
+                }
+            };
+            xobj.send(null);
+        }
+
+        // Load both Quran and Translation XML files
+        let quranData = null, translationData = null;
+
+        loadXML('quran.xml', function(data) {
+            quranData = data;
+            if (translationData !== null) {
+                console.log('Both XML files loaded, ready for search.');
+            }
+        });
+
+        loadXML('translation.xml', function(data) {
+            translationData = data;
+            if (quranData !== null) {
+                console.log('Both XML files loaded, ready for search.');
+            }
+        });
+
+        // Search functionality
+        document.getElementById('search-button').addEventListener('click', function() {
+            const searchTerm = document.getElementById('search-term').value.trim();
+            const searchLanguage = document.getElementById('search-language').value;
+
+            if (!searchTerm) {
+                alert('يرجى إدخال كلمة أو عبارة للبحث.');
+                return;
+            }
+
+            if (!quranData || !translationData) {
+                alert('البيانات لم يتم تحميلها بعد. يرجى الانتظار قليلاً.');
+                return;
+            }
+
+            // Perform search
+            const results = searchQuran(searchTerm, searchLanguage);
+
+            // Display results
+            displayResults(results, searchTerm, searchLanguage);
+        });
+
+        function searchQuran(term, language) {
+            const results = [];
+            const surahs = quranData.getElementsByTagName('sura');
+            const translationSurahs = translationData.getElementsByTagName('sura');
+
+            // Normalize the search term if searching in Arabic
+            const normalizedTerm = language === 'arabic' ? normalizeArabic(term) : term.toLowerCase();
+
+            for (let i = 0; i < surahs.length; i++) {
+                const surah = surahs[i];
+                const translationSurah = translationSurahs[i];
+                const surahNumber = surah.getAttribute('index');
+                const surahName = surah.getAttribute('name') || 'سورة ' + surahNumber;
+
+                const ayahs = surah.getElementsByTagName('aya');
+                const translationAyahs = translationSurah.getElementsByTagName('aya');
+
+                for (let j = 0; j < ayahs.length; j++) {
+                    const ayah = ayahs[j];
+                    const translationAyah = translationAyahs[j];
+
+                    const arabicText = ayah.getAttribute('text');
+                    const translationText = translationAyah.getAttribute('text');
+                    const ayahNumber = ayah.getAttribute('index');
+
+                    if (language === 'arabic') {
+                        // Normalize Arabic text and search term
+                        const normalizedArabicText = normalizeArabic(arabicText);
+                        if (normalizedArabicText.includes(normalizedTerm)) {
+                            results.push({
+                                surahNumber,
+                                surahName,
+                                ayahNumber,
+                                arabicText,
+                                translationText
+                            });
+                        }
+                    } else if (language === 'translation') {
+                        // Case-insensitive search for translation
+                        if (translationText.toLowerCase().includes(normalizedTerm)) {
+                            results.push({
+                                surahNumber,
+                                surahName,
+                                ayahNumber,
+                                arabicText,
+                                translationText
+                            });
+                        }
+                    }
+                }
+            }
+
+            return results;
+        }
+
+        function displayResults(results, term, language) {
+            const resultsDiv = document.getElementById('results');
+            resultsDiv.innerHTML = '';
+
+            if (results.length === 0) {
+                resultsDiv.innerHTML = `<p>لا توجد نتائج للبحث عن "${term}".</p>`;
+                return;
+            }
+
+            // Display number of results
+            resultsDiv.innerHTML = `<p>عدد النتائج: ${results.length}</p>`;
+
+            // Display each result
+            results.forEach(result => {
+                const resultItem = document.createElement('div');
+                resultItem.className = 'result-item';
+
+                // Surah and Ayah information
+                const info = document.createElement('p');
+                info.innerHTML = `<strong>${result.surahName} (${result.surahNumber}): الآية ${result.ayahNumber}</strong>`;
+                resultItem.appendChild(info);
+
+                // Arabic Ayah with highlight
+                const arabicAyah = document.createElement('p');
+                arabicAyah.className = 'ayah';
+                arabicAyah.innerHTML = highlightTerm(result.arabicText, term, language);
+                resultItem.appendChild(arabicAyah);
+
+                // Translation Ayah with highlight
+                const translationAyah = document.createElement('p');
+                translationAyah.className = 'translation';
+                translationAyah.innerHTML = highlightTerm(result.translationText, term, language);
+                resultItem.appendChild(translationAyah);
+
+                resultsDiv.appendChild(resultItem);
+            });
+        }
+
+        function highlightTerm(text, term, language) {
+            if (language === 'arabic') {
+                if (!term) return escapeHTML(text);
+                const regex = buildArabicRegex(term);
+                const escapedText = escapeHTML(text);
+                return escapedText.replace(regex, match => `<mark>${match}</mark>`);
+            } else {
+                if (!term) return escapeHTML(text);
+                const regex = new RegExp(`(${escapeRegExp(term)})`, 'gi');
+                const escapedText = escapeHTML(text);
+                return escapedText.replace(regex, '<mark>$1</mark>');
+            }
+        }
+
+        // Optionally, you can handle pressing 'Enter' to trigger search
+        document.getElementById('search-term').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                document.getElementById('search-button').click();
+            }
+        });
+
+        // Function to get URL parameters (optional, can be used to pre-fill search)
+        function getUrlParameter(name) {
+            name = name.replace(/[\[\]]/g, "\\$&");
+            var regex = new RegExp("[?&]" + name + "(=([^&#]*)|&|#|$)"),
+                results = regex.exec(window.location.href);
+            if (!results) return null;
+            if (!results[2]) return '';
+            return decodeURIComponent(results[2].replace(/\+/g, " "));
+        }
+
+        // Optional: Handle pre-filling search from URL parameters
+        window.onload = function() {
+            const term = getUrlParameter('term');
+            const language = getUrlParameter('lang');
+            if (term) {
+                document.getElementById('search-term').value = term;
+            }
+            if (language) {
+                document.getElementById('search-language').value = language;
+            }
+            if (term) {
+                document.getElementById('search-button').click();
+            }
+        };
+    </script>
+</body>
+</html>

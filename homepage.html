@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <title>الصفحة الرئيسية</title>
+    <!-- Include Web Font Loader for consistent Arabic font rendering -->
+    <script src="https://ajax.googleapis.com/ajax/libs/webfont/1/webfont.js"></script>
+    <style>
+        body {
+            background-color: #f9f9f9;
+            color: #333;
+            font-family: 'Amiri', serif; /* Ensure Amiri font is loaded */
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            margin: 0;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+        h1 {
+            font-size: 3em;
+            margin-bottom: 50px;
+            text-align: center;
+        }
+        .button-container {
+            display: flex;
+            flex-direction: column;
+            gap: 30px;
+        }
+        .button {
+            padding: 20px 40px;
+            font-size: 1.5em;
+            text-decoration: none;
+            color: #fff;
+            background-color: #007BFF;
+            border-radius: 10px;
+            text-align: center;
+            width: 250px;
+            transition: background-color 0.3s ease, transform 0.2s ease;
+        }
+        .button:hover {
+            background-color: #0056b3;
+            transform: translateY(-5px);
+        }
+        @media (max-width: 600px) {
+            .button {
+                width: 80%;
+                font-size: 1.2em;
+                padding: 15px 30px;
+            }
+            h1 {
+                font-size: 2.5em;
+            }
+        }
+    </style>
+</head>
+<body>
+    <h1>تطبيق القرآن الكريم</h1>
+    <div class="button-container">
+        <a href="index.html" class="button">القرآن</a>
+        <a href="search.html" class="button">بحث</a>
+    </div>
+    
+    <!-- Load the Amiri font for Arabic script -->
+    <script>
+        WebFont.load({
+            google: {
+                families: ['Amiri']
+            },
+            active: function() {
+                console.log('Amiri font loaded successfully.');
+            },
+            inactive: function() {
+                alert('فشل تحميل خط Amiri. يرجى التحقق من اتصال الإنترنت.');
+            }
+        });
+    </script>
+</body>
+</html>
