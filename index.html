@@ -3,14 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <title>تطبيق القرآن الكريم</title>
-    <!-- Include Google Fonts -->
-    <link href="https://fonts.googleapis.com/css2?family=Amiri&display=swap" rel="stylesheet">
+    <!-- Include Web Font Loader -->
+    <script src="https://ajax.googleapis.com/ajax/libs/webfont/1/webfont.js"></script>
     <style>
         body {
             background-color: white;
             color: black;
             font-size: 24px;
-            font-family: 'Amiri', serif;
             direction: rtl;
             margin: 20px;
         }
@@ -51,12 +50,16 @@
 <body>
     <div id="controls">
         <label for="font-type">نوع الخط:</label>
-        <select id="font-type">
-            <option value="'Amiri', serif">Amiri</option>
-            <option value="'Scheherazade New', serif">Scheherazade</option>
-            <option value="Arial">Arial</option>
-            <!-- Add more fonts as needed -->
-        </select>
+        <input type="text" id="font-type" placeholder="اكتب اسم الخط" list="font-list">
+        <datalist id="font-list">
+            <!-- Commonly used fonts (optional) -->
+            <option value="Amiri">
+            <option value="Scheherazade New">
+            <option value="Lateef">
+            <option value="Noto Naskh Arabic">
+            <option value="Arial">
+            <!-- You can add more commonly used fonts here -->
+        </datalist>
 
         <label for="font-size">حجم الخط:</label>
         <input type="number" id="font-size" value="24" min="10" max="72"> px
@@ -66,10 +69,25 @@
     <ul id="surah-list"></ul>
     <div id="content"></div>
 
+    <!-- Include your JavaScript code -->
     <script>
         // Adjust font type and size
         document.getElementById('font-type').addEventListener('change', function() {
-            document.body.style.fontFamily = this.value;
+            var fontName = this.value.trim();
+            if (fontName) {
+                // Load the font using Web Font Loader
+                WebFont.load({
+                    google: {
+                        families: [fontName + ':400,700']
+                    },
+                    active: function() {
+                        document.body.style.fontFamily = "'" + fontName + "', serif";
+                    },
+                    inactive: function() {
+                        alert('Font "' + fontName + '" could not be loaded. Please check the font name.');
+                    }
+                });
+            }
         });
 
         document.getElementById('font-size').addEventListener('input', function() {
